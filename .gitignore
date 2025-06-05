@@ -38,4 +38,4 @@ yarn-error.*
 
 app-example
 
-services/firebase.ts
+src/services/firebase.ts
