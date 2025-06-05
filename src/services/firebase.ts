@@ -1,7 +1,9 @@
 // Import the functions you need from the SDKs you need
 
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { FirebaseApp, getApps, initializeApp } from "firebase/app";
+import { Auth, getAuth, GoogleAuthProvider } from "firebase/auth";
+import { Firestore, getFirestore } from "firebase/firestore";
+
 
 // TODO: Add SDKs for Firebase products that you want to use
 
@@ -28,9 +30,45 @@ const firebaseConfig = {
 
 
 // Initialize Firebase
+let firebaseApp: FirebaseApp;
+try {
+  if (getApps().length === 0) {
+    firebaseApp = initializeApp(firebaseConfig);
+    console.log("Firebase initialized successfully");
+  } else {
+    firebaseApp = getApps()[0];
+    console.log("Firebase already initialized");
+  }
+} catch (error) {
+  console.error("Firebase initialization error:", error);
+  throw error;
+}
 
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase Authentication
+let auth: Auth;
+try {
+  auth = getAuth(firebaseApp);
+  console.log("Firebase Auth initialized successfully");
+} catch (error) {
+  console.error("Firebase Auth initialization error:", error);
+  throw error;
+}
 
+// Initialize Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+    prompt: 'select_account'
+});
 
-// Initialize Firebase Authentication and get a reference to the service
-export const auth = getAuth(app);
+// Initialize Firestore
+let db: Firestore;
+try {
+  db = getFirestore(firebaseApp);
+  console.log("Firestore initialized successfully");
+} catch (error) {
+  console.error("Firestore initialization error:", error);
+  throw error;
+}
+
+export { auth, db, firebaseApp, googleProvider };
+
