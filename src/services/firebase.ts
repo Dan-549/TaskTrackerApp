@@ -14,7 +14,7 @@ import { Firestore, getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
 
-  apiKey: "AIzaSyDBUZYeCCsy1kOYbDbwBBmy_Mm7hlVjRJ4",
+  apiKey: "AIzaSyD9anuEHR2AMZAllQ8HN_fRm57azsBaa2g",
 
   authDomain: "tasktrackerapp-b4b8f.firebaseapp.com",
 
