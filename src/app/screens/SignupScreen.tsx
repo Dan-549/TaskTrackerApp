@@ -1,10 +1,9 @@
 import { router } from 'expo-router';
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithPopup, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { auth, db, googleProvider } from '../../services/firebase';
-import { validateSignupData } from '../../services/userValidation';
 
 export default function SignUp() {
     const [name, setName] = useState('');
@@ -14,37 +13,33 @@ export default function SignUp() {
     const [age, setAge] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [isInitialized, setIsInitialized] = useState(false);
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, () => {
-            if (!isInitialized) {
-                setIsInitialized(true);
-            }
-        });
 
-        return () => unsubscribe();
-    }, []);
+    
 
     const handleSignUp = async () => {
-        if (!isInitialized) {
-            Alert.alert('Error', 'Please wait for authentication to initialize');
-            return;
-        }
+       
 
         console.log('Starting signup process...');
         
-        // Validate signup data
-        const validationResult = validateSignupData({
-            name,
-            email,
-            password,
-            confirmPassword,
-            age
-        });
+        if (!name || !email || !password || !confirmPassword || !age) {
+            setError('Please fill in all fields');
+            return;
+        }
 
-        if (!validationResult.isValid) {
-            setError(validationResult.error || 'Validation failed');
+        const ageNumber = parseInt(age);
+        if (isNaN(ageNumber) || ageNumber < 13 || ageNumber > 120) {
+            setError('Please enter a valid age between 13 and 120');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters long');
             return;
         }
 
@@ -70,7 +65,7 @@ export default function SignUp() {
                 uid: user.uid,
                 name: name,
                 email: user.email,
-                age: parseInt(age),
+                age: ageNumber,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
@@ -109,10 +104,7 @@ export default function SignUp() {
     };
 
     const handleGoogleSignIn = async () => {
-        if (!isInitialized) {
-            Alert.alert('Error', 'Please wait for authentication to initialize');
-            return;
-        }
+        
 
         try {
             setIsLoading(true);
