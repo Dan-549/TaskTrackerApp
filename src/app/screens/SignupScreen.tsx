@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { createUserWithEmailAndPassword, signInWithPopup, updateProfile, User } from 'firebase/auth';
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithPopup, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { auth, db, firebaseApp, googleProvider } from '../../services/firebase';
+import { auth, db, googleProvider } from '../../services/firebase';
+import { validateSignupData } from '../../services/userValidation';
 
 export default function SignUp() {
     const [name, setName] = useState('');
@@ -15,38 +16,14 @@ export default function SignUp() {
     const [error, setError] = useState('');
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Verify Firebase initialization
     useEffect(() => {
-        const checkFirebase = async () => {
-            try {
-                console.log('Checking Firebase initialization status...');
-                
-                if (!firebaseApp || !auth) {
-                    throw new Error('Firebase not initialized');
-                }
-
-                // Test auth state
-                const unsubscribe = auth.onAuthStateChanged(
-                    (user: User | null) => {
-                        console.log('Auth state initialized:', user ? 'user logged in' : 'no user');
-                        setIsInitialized(true);
-                    },
-                    (error: Error) => {
-                        console.error('Auth state error:', error);
-                        Alert.alert('Error', 'Failed to initialize authentication. Please try again later.');
-                        setIsInitialized(false);
-                    }
-                );
-
-                return () => unsubscribe();
-            } catch (error) {
-                console.error('Firebase initialization check failed:', error);
-                Alert.alert('Error', 'Failed to initialize Firebase. Please try again later.');
-                setIsInitialized(false);
+        const unsubscribe = onAuthStateChanged(auth, () => {
+            if (!isInitialized) {
+                setIsInitialized(true);
             }
-        };
+        });
 
-        checkFirebase();
+        return () => unsubscribe();
     }, []);
 
     const handleSignUp = async () => {
@@ -57,24 +34,17 @@ export default function SignUp() {
 
         console.log('Starting signup process...');
         
-        if (!name || !email || !password || !confirmPassword || !age) {
-            setError('Please fill in all fields');
-            return;
-        }
+        // Validate signup data
+        const validationResult = validateSignupData({
+            name,
+            email,
+            password,
+            confirmPassword,
+            age
+        });
 
-        const ageNumber = parseInt(age);
-        if (isNaN(ageNumber) || ageNumber < 13 || ageNumber > 120) {
-            setError('Please enter a valid age between 13 and 120');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters long');
+        if (!validationResult.isValid) {
+            setError(validationResult.error || 'Validation failed');
             return;
         }
 
@@ -100,7 +70,7 @@ export default function SignUp() {
                 uid: user.uid,
                 name: name,
                 email: user.email,
-                age: ageNumber,
+                age: parseInt(age),
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
